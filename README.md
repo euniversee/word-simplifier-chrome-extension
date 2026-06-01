@@ -34,9 +34,10 @@ This extension relies on the Gemini API. You can get a free key easily:
 ## Setting Up the Extension
 
 1. Click the **Word Simplifier** icon in your browser toolbar to open the Side Panel.
-2. Click the ⚙️ (Gear) icon in the top right corner of the panel to open **Settings**.
+2. On your very first launch, the extension will automatically open the **Settings** menu.
 3. Paste your Gemini API Key into the input field.
-4. Click **Save Key**. You can also click **Test** to ensure your key is valid.
+4. Click **Save Key**. The extension will automatically take you to the main view so you can start using it!
+5. *(Optional)* You can click the ⚙️ (Gear) icon anytime later to update your key, test your key's validity, or export your saved words.
 
 ## How to Use
 
