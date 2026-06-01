@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Word Simplifier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ── Reset & Tokens ────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         hsl(0 0% 100%);
+      --bg-muted:   hsl(0 0% 97.5%);
+      --border:     hsl(0 0% 89.8%);
+      --input:      hsl(0 0% 89.8%);
+      --ring:       hsl(0 0% 63.9%);
+      --fg:         hsl(0 0% 3.9%);
+      --fg-muted:   hsl(0 0% 45.1%);
+      --primary:    hsl(0 0% 9%);
+      --primary-fg: hsl(0 0% 98%);
+      --accent:     hsl(0 0% 96.1%);
+      --accent-fg:  hsl(0 0% 9%);
+      --destructive:hsl(0 84.2% 60.2%);
+      --radius:     0.5rem;
+      --font:       'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--fg);
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Header ─────────────────────────────────────────── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo {
+      width: 22px; height: 22px;
+      border-radius: 5px;
+      background: var(--primary);
+      color: var(--primary-fg);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 11px;
+    }
+
+    .header-title {
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: -0.01em;
+    }
+
+    .icon-btn {
+      width: 32px; height: 32px;
+      display: flex; align-items: center; justify-content: center;
+      border: none; background: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      color: var(--fg-muted);
+      transition: background 0.15s, color 0.15s;
+    }
+    .icon-btn:hover { background: var(--accent); color: var(--fg); }
+    .icon-btn svg { width: 16px; height: 16px; }
+
+    /* ── Views ───────────────────────────────────────────── */
+    .view { display: none; flex-direction: column; flex: 1; overflow: hidden; }
+    .view.active { display: flex; }
+
+    /* ── Main View ───────────────────────────────────────── */
+    .main-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    /* Empty State */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      height: 100%;
+      gap: 8px;
+    }
+    .empty-state svg { width: 40px; height: 40px; color: var(--border); }
+    .empty-state p { font-size: 13px; color: var(--fg-muted); max-width: 200px; }
+
+    /* Loader */
+    .loader {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      height: 100%;
+    }
+    .loader.active { display: flex; }
+
+    .dot-pulse {
+      display: flex; gap: 6px;
+    }
+    .dot-pulse span {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--fg-muted);
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    .dot-pulse span:nth-child(2) { animation-delay: 0.15s; }
+    .dot-pulse span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes pulse {
+      0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+      40% { opacity: 1; transform: scale(1); }
+    }
+    .loader-text { font-size: 12px; color: var(--fg-muted); }
+
+    /* Error */
+    .error-msg {
+      display: none;
+      font-size: 13px;
+      color: var(--destructive);
+      border: 1px solid hsl(0 84.2% 60.2% / 0.2);
+      background: hsl(0 84.2% 60.2% / 0.06);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+    }
+
+    /* Result Card */
+    .result-card { display: none; }
+    .result-card.active { display: block; }
+
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .word-title {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      word-break: break-word;
+    }
+
+    .card-actions { display: flex; gap: 2px; }
+
+    .card-actions .icon-btn.saved { color: hsl(45 93% 47%); }
+
+    .section { margin-bottom: 14px; }
+    .section:last-child { margin-bottom: 0; }
+
+    .label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--fg-muted);
+      margin-bottom: 4px;
+    }
+
+    .value { font-size: 14px; color: var(--fg); }
+
+    .example-box {
+      margin-top: 6px;
+      font-size: 13px;
+      font-style: italic;
+      color: var(--fg-muted);
+      padding: 8px 10px;
+      border-left: 2px solid var(--border);
+      background: var(--bg-muted);
+      border-radius: 0 var(--radius) var(--radius) 0;
+    }
+
+    /* ── Saved Words (bottom drawer) ─────────────────── */
+    .saved-section {
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+      max-height: 40%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .saved-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .saved-header:hover { background: var(--bg-muted); }
+    .saved-header svg {
+      width: 14px; height: 14px;
+      transition: transform 0.2s;
+    }
+    .saved-header.open svg { transform: rotate(180deg); }
+
+    .saved-list {
+      display: none;
+      overflow-y: auto;
+      padding: 0 16px 12px;
+      gap: 6px;
+      flex-direction: column;
+    }
+    .saved-list.open { display: flex; }
+
+    .saved-item {
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .saved-item:hover { background: var(--bg-muted); }
+
+    .saved-word { font-weight: 600; font-size: 13px; }
+    .saved-def  { font-size: 12px; color: var(--fg-muted); margin-top: 2px; }
+
+    .saved-empty {
+      font-size: 12px;
+      color: var(--fg-muted);
+      padding: 4px 0;
+    }
+
+    /* ── Settings View ───────────────────────────────── */
+    .settings-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .settings-group { margin-bottom: 20px; }
+
+    .settings-group-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+
+    .field { margin-bottom: 14px; }
+    .field:last-child { margin-bottom: 0; }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      margin-bottom: 4px;
+      color: var(--fg);
+    }
+
+    .field .hint {
+      font-size: 11px;
+      color: var(--fg-muted);
+      margin-top: 4px;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      height: 36px;
+      padding: 0 10px;
+      font-size: 13px;
+      font-family: var(--font);
+      border: 1px solid var(--input);
+      border-radius: var(--radius);
+      background: var(--bg);
+      color: var(--fg);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    input:focus {
+      border-color: var(--ring);
+      box-shadow: 0 0 0 2px hsl(0 0% 63.9% / 0.15);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      height: 34px;
+      padding: 0 14px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: var(--font);
+      border-radius: var(--radius);
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s, opacity 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--primary-fg);
+    }
+    .btn-primary:hover { opacity: 0.9; }
+
+    .btn-outline {
+      background: var(--bg);
+      color: var(--fg);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { background: var(--accent); }
+
+    .btn-destructive {
+      background: var(--destructive);
+      color: white;
+    }
+    .btn-destructive:hover { opacity: 0.9; }
+
+    .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .badge-ok   { background: hsl(142 76% 36% / 0.1); color: hsl(142 76% 36%); }
+    .badge-warn { background: hsl(38 92% 50% / 0.1);  color: hsl(38 92% 50%); }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 16px 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Header ──────────────────────────────────── -->
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">W</div>
+      <span class="header-title">Word Simplifier</span>
+    </div>
+    <button type="button" class="icon-btn" id="settings-toggle" title="Settings">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+        <circle cx="12" cy="12" r="3"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ─── Main View ───────────────────────────────── -->
+  <div class="view active" id="view-main">
+    <div class="main-scroll">
+      <div class="empty-state" id="empty-state">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 6.1H3"/><path d="M21 12.1H3"/><path d="M15.1 18H3"/>
+        </svg>
+        <p>Highlight a word in any page to simplify it</p>
+      </div>
+
+      <div class="loader" id="loader">
+        <div class="dot-pulse"><span></span><span></span><span></span></div>
+        <div class="loader-text">Simplifying…</div>
+      </div>
+
+      <div class="error-msg" id="error-msg"></div>
+
+      <div class="result-card" id="result-card">
+        <div class="card-top">
+          <h2 class="word-title" id="word-title"></h2>
+          <div class="card-actions">
+            <button type="button" class="icon-btn" id="tts-btn" title="Pronounce">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              </svg>
+            </button>
+            <button type="button" class="icon-btn" id="save-btn" title="Save">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="section">
+          <div class="label">Definition</div>
+          <div class="value" id="def-val"></div>
+          <div class="example-box" id="ex-val"></div>
+        </div>
+
+        <div class="section">
+          <div class="label">Indonesian</div>
+          <div class="value" id="indo-val"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="saved-section">
+      <div class="saved-header" id="saved-toggle">
+        <span>Saved Words</span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </div>
+      <div class="saved-list" id="saved-list"></div>
+    </div>
+  </div>
+
+  <!-- ─── Settings View ──────────────────────────── -->
+  <div class="view" id="view-settings">
+    <div class="settings-scroll">
+
+      <div class="settings-group">
+        <div class="settings-group-title">API Key</div>
+        <div class="field">
+          <label for="api-key-input">Gemini API Key</label>
+          <input type="password" id="api-key-input" placeholder="AIzaSy…" spellcheck="false" autocomplete="off">
+          <div class="hint">Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" style="color: var(--fg); text-decoration: underline;">aistudio.google.com</a></div>
+          <div class="status-row" id="key-status"></div>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-primary" id="save-key-btn">Save Key</button>
+          <button type="button" class="btn btn-outline" id="test-key-btn">Test</button>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="settings-group">
+        <div class="settings-group-title">Data</div>
+        <div class="field">
+          <label>Saved Words</label>
+          <div class="hint" id="word-count">0 words saved</div>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-outline" id="export-btn">Export</button>
+          <button type="button" class="btn btn-destructive" id="clear-btn">Clear All</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="side_panel.js"></script>
+</body>
+</html>
