@@ -35,6 +35,14 @@ const clearBtn    = $("clear-btn");
 loadHistory();
 loadSettings();
 
+chrome.storage.local.get(["geminiApiKey"], (r) => {
+  if (!r.geminiApiKey) {
+    onSettings = true;
+    viewMain.classList.remove("active");
+    viewSettings.classList.add("active");
+  }
+});
+
 // ── Navigation ────────────────────────────────────────
 let onSettings = false;
 
@@ -230,6 +238,11 @@ saveKeyBtn.addEventListener("click", () => {
   }
   chrome.storage.local.set({ geminiApiKey: key }, () => {
     keyStatus.innerHTML = '<span class="badge badge-ok">Saved ✓</span>';
+    setTimeout(() => {
+      onSettings = false;
+      viewMain.classList.add("active");
+      viewSettings.classList.remove("active");
+    }, 600);
   });
 });
 
